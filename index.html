@@ -1,0 +1,41 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ENVOLÉES — вход</title><meta name="robots" content="noindex">
+<style>
+:root{--bg:#0b0a0a;--fg:#f3ecdc;--mut:#a49a90;--sand:#d9c3a5}
+*{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:16px -apple-system,"Helvetica Neue",Arial,sans-serif}
+main{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:40px max(20px,env(safe-area-inset-left)) 60px;text-align:center}
+h1{margin:0;font:400 30px "Didot","Bodoni 72",Georgia,serif;letter-spacing:.3em;padding-left:.3em}
+.tag{margin:-12px 0 8px;color:var(--mut);font-style:italic;font-family:Georgia,serif}
+p{margin:0;max-width:30ch;line-height:1.45;color:var(--mut)}
+#ok{display:none;color:var(--sand);font-size:18px}
+#err{color:#e08a7a;min-height:1.2em}
+a{color:var(--sand)}
+</style></head><body><main>
+<h1>ENVOLÉES</h1><div class="tag">Prends ton envol</div>
+<p id="lead">Нажмите кнопку, укажите номер телефона — Telegram пришлёт подтверждение. Примите его, и вы внутри.</p>
+<div id="w"></div>
+<p id="ok">Вход подтверждён.<br>Вернитесь в ENVOLÉES — вы уже внутри.</p>
+<p id="err"></p>
+<p style="font-size:13px">Или <a id="bot" href="#">откройте бота в Telegram</a> и нажмите «Старт».</p>
+</main>
+<script>
+const FN = 'https://stjvhtagnerrktnwdlvh.supabase.co/functions/v1/tg-login';
+const code = new URLSearchParams(location.search).get('c') || '';
+document.getElementById('bot').href = 'https://t.me/envolees_rating_bot' + (code ? '?start=' + code : '');
+if (!/^[a-z0-9]{10,40}$/.test(code)) { document.getElementById('lead').textContent = 'Откройте эту страницу из приложения ENVOLÉES — кнопка «Войти через Telegram».'; }
+else {
+  const s = document.createElement('script'); s.async = true; s.src = 'https://telegram.org/js/telegram-widget.js?22';
+  s.setAttribute('data-telegram-login', 'envolees_rating_bot'); s.setAttribute('data-size', 'large'); s.setAttribute('data-radius', '22');
+  s.setAttribute('data-onauth', 'onTelegramAuth(user)'); s.setAttribute('data-request-access', 'write'); s.setAttribute('data-lang', 'ru');
+  document.getElementById('w').appendChild(s);
+}
+async function onTelegramAuth(user){
+  document.getElementById('err').textContent = '';
+  try {
+    const r = await fetch(FN, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'widget', code, user})});
+    const d = await r.json();
+    if (d.ok) { ['lead','w'].forEach(i => document.getElementById(i).style.display = 'none'); document.getElementById('ok').style.display = 'block'; }
+    else document.getElementById('err').textContent = d.error === 'expired' ? 'Ссылка устарела — нажмите «Войти через Telegram» в приложении ещё раз.' : 'Не получилось подтвердить вход. Попробуйте ещё раз.';
+  } catch (e) { document.getElementById('err').textContent = 'Нет связи. Попробуйте ещё раз.'; }
+}
+</script></body></html>
